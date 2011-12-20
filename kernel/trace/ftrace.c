@@ -1004,6 +1004,11 @@ static struct ftrace_page	*ftrace_pages;
 
 static struct dyn_ftrace *ftrace_free_records;
 
+static bool ftrace_hash_empty(struct ftrace_hash *hash)
+{
+	return !hash || !hash->count;
+}
+
 static struct ftrace_func_entry *
 ftrace_lookup_ip(struct ftrace_hash *hash, unsigned long ip)
 {
@@ -1012,7 +1017,7 @@ ftrace_lookup_ip(struct ftrace_hash *hash, unsigned long ip)
 	struct hlist_head *hhd;
 	struct hlist_node *n;
 
-	if (!hash->count)
+	if (ftrace_hash_empty(hash))
 		return NULL;
 
 	if (hash->size_bits > 0)
@@ -1156,7 +1161,7 @@ alloc_and_copy_ftrace_hash(int size_bits, struct ftrace_hash *hash)
 		return NULL;
 
 	/* Empty hash? */
-	if (!hash || !hash->count)
+	if (ftrace_hash_empty(hash))
 		return new_hash;
 
 	size = 1 << hash->size_bits;
@@ -1279,9 +1284,9 @@ ftrace_ops_test(struct ftrace_ops *ops, unsigned long ip)
 	filter_hash = rcu_dereference_raw(ops->filter_hash);
 	notrace_hash = rcu_dereference_raw(ops->notrace_hash);
 
-	if ((!filter_hash || !filter_hash->count ||
+	if ((ftrace_hash_empty(filter_hash) ||
 	     ftrace_lookup_ip(filter_hash, ip)) &&
-	    (!notrace_hash || !notrace_hash->count ||
+	    (ftrace_hash_empty(notrace_hash) ||
 	     !ftrace_lookup_ip(notrace_hash, ip)))
 		ret = 1;
 	else
@@ -1333,7 +1338,7 @@ static void __ftrace_hash_rec_update(struct ftrace_ops *ops,
 	if (filter_hash) {
 		hash = ops->filter_hash;
 		other_hash = ops->notrace_hash;
-		if (!hash || !hash->count)
+		if (ftrace_hash_empty(hash))
 			all = 1;
 	} else {
 		inc = !inc;
@@ -1343,7 +1348,7 @@ static void __ftrace_hash_rec_update(struct ftrace_ops *ops,
 		 * If the notrace hash has no items,
 		 * then there's nothing to do.
 		 */
-		if (!hash || !hash->count)
+		if (ftrace_hash_empty(hash))
 			return;
 	}
 
@@ -1360,8 +1365,8 @@ static void __ftrace_hash_rec_update(struct ftrace_ops *ops,
 			if (!other_hash || !ftrace_lookup_ip(other_hash, rec->ip))
 				match = 1;
 		} else {
-			in_hash = hash && !!ftrace_lookup_ip(hash, rec->ip);
-			in_other_hash = other_hash && !!ftrace_lookup_ip(other_hash, rec->ip);
+			in_hash = !!ftrace_lookup_ip(hash, rec->ip);
+			in_other_hash = !!ftrace_lookup_ip(other_hash, rec->ip);
 
 			/*
 			 *
@@ -1369,7 +1374,7 @@ static void __ftrace_hash_rec_update(struct ftrace_ops *ops,
 			if (filter_hash && in_hash && !in_other_hash)
 				match = 1;
 			else if (!filter_hash && in_hash &&
-				 (in_other_hash || !other_hash->count))
+				 (in_other_hash || ftrace_hash_empty(other_hash)))
 				match = 1;
 		}
 		if (!match)
@@ -1784,7 +1789,7 @@ static int ops_traces_mod(struct ftrace_ops *ops)
 	struct ftrace_hash *hash;
 
 	hash = ops->filter_hash;
-	return !!(!hash || !hash->count);
+	return ftrace_hash_empty(hash);
 }
 
 static int ftrace_update_code(struct module *mod)
@@ -2097,7 +2102,8 @@ static void *t_start(struct seq_file *m, loff_t *pos)
 	 * off, we can short cut and just print out that all
 	 * functions are enabled.
 	 */
-	if (iter->flags & FTRACE_ITER_FILTER && !ops->filter_hash->count) {
+	if (iter->flags & FTRACE_ITER_FILTER &&
+	    ftrace_hash_empty(ops->filter_hash)) {
 		if (*pos > 0)
 			return t_hash_start(m, pos);
 		iter->flags |= FTRACE_ITER_PRINTALL;
