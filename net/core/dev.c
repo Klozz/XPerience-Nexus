@@ -2550,6 +2550,8 @@ __u32 __skb_get_rxhash(struct sk_buff *skb)
 			goto done;
 
 		ip = (const struct iphdr *) (skb->data + nhoff);
+		if (ip->ihl < 5)
+			goto done;
 		if (ip_is_fragment(ip))
 			ip_proto = 0;
 		else
