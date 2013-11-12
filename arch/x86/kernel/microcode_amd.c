@@ -305,8 +305,13 @@ static enum ucode_state request_microcode_amd(int cpu, struct device *device)
 	const struct firmware *fw;
 	enum ucode_state ret = UCODE_NFOUND;
 
+<<<<<<< HEAD
 	if (request_firmware(&fw, fw_name, device)) {
 		pr_err("failed to load file %s\n", fw_name);
+=======
+	if (request_firmware(&fw, (const char *)fw_name, device)) {
+		pr_debug("failed to load file %s\n", fw_name);
+>>>>>>> 43f8e23... x86/microcode/amd: Tone down printk(), don't treat a missing firmware file as an error
 		goto out;
 	}
 
