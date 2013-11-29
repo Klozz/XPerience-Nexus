@@ -570,10 +570,14 @@ void __init efi_init(void)
 	if (add_efi_memmap)
 		do_add_efi_memmap();
 
+<<<<<<< HEAD
 #ifdef CONFIG_X86_32
 	x86_platform.get_wallclock = efi_get_time;
 	x86_platform.set_wallclock = efi_set_rtc_mmss;
 #endif
+=======
+	set_bit(EFI_MEMMAP, &x86_efi_facility);
+>>>>>>> d7b05fb... x86, efi: Don't use (U)EFI time services on 32 bit
 
 #if EFI_DEBUG
 	print_efi_memmap();
