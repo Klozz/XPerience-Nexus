@@ -606,7 +606,6 @@ static ssize_t show_bios_limit(struct cpufreq_policy *policy, char *buf)
 #include "../../arch/arm/mach-tegra/clock.h"
 
 extern int user_mv_table[MAX_DVFS_FREQS];
-extern int gpuc_mv_table[MAX_DVFS_FREQS];
 
 static ssize_t show_UV_mV_table(struct cpufreq_policy *policy, char *buf)
 {
@@ -660,57 +659,6 @@ static ssize_t store_UV_mV_table(struct cpufreq_policy *policy, char *buf, size_
 	return count;
 }
 
-static ssize_t show_gpuc_UV_mV_table(struct cpufreq_policy *policy, char *buf)
-{
-	int i = 0;
-	char *out = buf;
-	struct clk *clk_gpuc = tegra_get_clock_by_name("3d");
-
-	/* find how many actual entries there are */
-	i = clk_gpuc->dvfs->num_freqs;
-
-	for(i--; i >=0; i--) {
-		out += sprintf(out, "%lumhz: %i mV\n",
-				clk_gpuc->dvfs->freqs[i]/1000000,
-				clk_gpuc->dvfs->millivolts[i]);
-	}
-
-	return out - buf;
-}
-
-static ssize_t store_gpuc_UV_mV_table(struct cpufreq_policy *policy, char *buf, size_t count)
-{
-	int i = 0;
-	unsigned long volt_cur;
-	int ret;
-	char size_cur[16];
-
-	struct clk *clk_gpuc = tegra_get_clock_by_name("3d");
-
-	/* find how many actual entries there are */
-	i = clk_gpuc->dvfs->num_freqs;
-
-	for(i--; i >= 0; i--) {
-
-		if(clk_gpuc->dvfs->freqs[i]/1000000 != 0) {
-			ret = sscanf(buf, "%lu", &volt_cur);
-			if (ret != 1)
-				return -EINVAL;
-
-			/* TODO: need some robustness checks */
-			gpuc_mv_table[i] = volt_cur;
-			pr_info("gpuc mv tbl[%i]: %lu\n", i, volt_cur);
-
-			/* Non-standard sysfs interface: advance buf */
-			ret = sscanf(buf, "%s", size_cur);
-			buf += (strlen(size_cur)+1);
-		}
-	}
-	/* update dvfs table here */
-	clk_gpuc->dvfs->millivolts = gpuc_mv_table;
-
-	return count;
-}
 #endif
 #ifdef CONFIG_GPU_OVERCLOCK
 static ssize_t show_gpu_oc(struct cpufreq_policy *policy, char *buf)
