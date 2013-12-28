@@ -786,7 +786,6 @@ cpufreq_freq_attr_ro(policy_min_freq);
 cpufreq_freq_attr_ro(policy_max_freq);
 #ifdef CONFIG_VOLTAGE_CONTROL
 cpufreq_freq_attr_rw(UV_mV_table);
-cpufreq_freq_attr_rw(gpuc_UV_mV_table);
 #endif
 #ifdef CONFIG_GPU_OVERCLOCK
 cpufreq_freq_attr_rw(gpu_oc);
@@ -809,7 +808,6 @@ static struct attribute *default_attrs[] = {
 	&policy_max_freq.attr,
 #ifdef CONFIG_VOLTAGE_CONTROL
 	&UV_mV_table.attr,
-	&gpuc_UV_mV_table.attr,
 #endif
 #ifdef CONFIG_GPU_OVERCLOCK
 	&gpu_oc.attr,
