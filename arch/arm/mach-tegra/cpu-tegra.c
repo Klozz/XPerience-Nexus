@@ -33,6 +33,7 @@
 #include <linux/suspend.h>
 #include <linux/debugfs.h>
 #include <linux/cpu.h>
+#include <linux/tegra_minmax_cpufreq.h>
 
 #include <asm/system.h>
 
@@ -42,6 +43,10 @@
 #include "clock.h"
 #include "cpu-tegra.h"
 #include "dvfs.h"
+
+/* create variables to hold our min/max speeds */
+DEFINE_PER_CPU(unsigned long int, tegra_cpu_min_freq);
+DEFINE_PER_CPU(unsigned long int, tegra_cpu_max_freq);
 
 /* tegra throttling and edp governors require frequencies in the table
    to be in ascending order */
@@ -732,9 +737,13 @@ static int tegra_cpu_init(struct cpufreq_policy *policy)
 	policy->shared_type = CPUFREQ_SHARED_TYPE_ALL;
 	cpumask_copy(policy->related_cpus, cpu_possible_mask);
 
+	policy->max = per_cpu(tegra_cpu_max_freq, policy->cpu);
+	policy->min = per_cpu(tegra_cpu_min_freq, policy->cpu);
+	tegra_update_cpu_speed(per_cpu(tegra_cpu_max_freq, policy->cpu));
+
 	if (policy->cpu == 0) {
 		/* set to 1.3GHz stock freq on init */
-		policy->max = 1300000;
+		//policy->max = 1300000;
 		register_pm_notifier(&tegra_cpu_pm_notifier);
 	}
 
