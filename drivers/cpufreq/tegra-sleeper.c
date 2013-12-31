@@ -26,27 +26,29 @@
 #define TEGRA_SLEEPER_MAJOR_VERSION	1
 #define TEGRA_SLEEPER_MINOR_VERSION	1
 
-
-
 #ifdef CONFIG_HAS_EARLYSUSPEND
-static void tegra_sleeper_early_suspend(struct early_suspend *h)
+static void __cpuinit tegra_sleeper_early_suspend(struct early_suspend *h)
 {
 	int cpu;
-
-	for_each_present_cpu(cpu) {
-		per_cpu(tegra_cpu_max_freq, cpu) = 475000;
-	}
+	for_each_possible_cpu(cpu) {
+		if (cpu_online(cpu)) {	
+			per_cpu(tegra_cpu_max_freq, cpu) = 475000;
+			pr_info("Earlysuspend: set max freq to 475MHz\n");
+		}
+	}		
 	return; 
 
 }
 
-static void tegra_sleeper_late_resume(struct early_suspend *h)
+static void __cpuinit tegra_sleeper_late_resume(struct early_suspend *h)
 {
 	int cpu;
-
-	for_each_present_cpu(cpu) {
-		per_cpu(tegra_cpu_max_freq, cpu) = 1300000;	
-	}	
+	for_each_possible_cpu(cpu) {
+		if (cpu_online(cpu)) {
+			per_cpu(tegra_cpu_max_freq, cpu) = 1300000;	
+			pr_info("Lateresume: set max freq to 1300MHz\n");	
+		}
+	}
 	return; 
 
 }
