@@ -16,24 +16,44 @@
 
 #include <linux/earlysuspend.h>
 #include <linux/workqueue.h>
+#include <linux/mutex.h>
 #include <linux/cpu.h>
 #include <linux/module.h>
 #include <linux/cpufreq.h>
 #include <linux/init.h>
 #include <linux/tegra_minmax_cpufreq.h>
+/* Extra includes for the future sysfs interface
+#include <linux/sysfs.h>
+#include <linux/kobject.h>
+*/
 
+/*Current modular interface*/
+#include <linux/moduleparam.h>
 
 #define TEGRA_SLEEPER_MAJOR_VERSION	1
 #define TEGRA_SLEEPER_MINOR_VERSION	1
+
+/* start modular interface */
+unsigned int maxscroff_freq = 475000;
+unsigned int maxscron_freq = 1300000;
+module_param(maxscroff_freq, uint, 0644);
+module_param(maxscron_freq, uint, 0644);
+/* end modular interface */
+
+static DEFINE_MUTEX(scroff_freq);
 
 #ifdef CONFIG_HAS_EARLYSUSPEND
 static void __cpuinit tegra_sleeper_early_suspend(struct early_suspend *h)
 {
 	int cpu;
 	for_each_possible_cpu(cpu) {
-		if (cpu_online(cpu)) {	
-			per_cpu(tegra_cpu_max_freq, cpu) = 475000;
-			pr_info("Earlysuspend: set max freq to 475MHz\n");
+		if (cpu_online(cpu)) {
+			/*Use mutex because this region holds data that gets updated*/			
+			mutex_lock(&scroff_freq);
+			int maxscroff_freq_val = maxscroff_freq;
+			mutex_unlock(&scroff_freq);
+			per_cpu(tegra_cpu_max_freq, cpu) = maxscroff_freq_val;
+			pr_info("Earlysuspend: set max freq to %d\n", maxscroff_freq);
 		}
 	}		
 	return; 
@@ -45,8 +65,12 @@ static void __cpuinit tegra_sleeper_late_resume(struct early_suspend *h)
 	int cpu;
 	for_each_possible_cpu(cpu) {
 		if (cpu_online(cpu)) {
-			per_cpu(tegra_cpu_max_freq, cpu) = 1300000;	
-			pr_info("Lateresume: set max freq to 1300MHz\n");	
+			/*Use mutex because this region holds data that gets updated*/			
+			mutex_lock(&scroff_freq);
+			int maxscron_freq_val = maxscron_freq;
+			mutex_unlock(&scroff_freq);
+			per_cpu(tegra_cpu_max_freq, cpu) = maxscron_freq_val;	
+			pr_info("Lateresume: set max freq to %d\n", maxscron_freq);	
 		}
 	}
 	return; 
