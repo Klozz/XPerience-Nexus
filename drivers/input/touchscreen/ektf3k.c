@@ -243,10 +243,9 @@ unsigned int dt2w_2_y[2] = {0, 0};
 #define DT2W_TIMEOUT_MIN 4
 #define DT2W_DELTA 150
 
-static struct wake_lock dt2w_wakelock;
-static struct wake_lock s2w_wakelock;
+static struct wake_lock touch_wakelock;
 
-int wake_timeout = 60;
+int wake_timeout = 30;
 
 int portrait_normal = 1848;
 /*module_param(portrait_normal, uint, 0644);*/
@@ -2148,8 +2147,7 @@ static int elan_ktf3k_ts_probe(struct i2c_client *client,
 	
 	ts->status = 1; // set I2C status is OK;
 	wake_lock_init(&ts->wakelock, WAKE_LOCK_SUSPEND, "elan_touch");
-	wake_lock_init(&dt2w_wakelock, WAKE_LOCK_SUSPEND, "dt2w_wakelock");
-	wake_lock_init(&s2w_wakelock, WAKE_LOCK_SUSPEND, "s2w_wakelock");
+	wake_lock_init(&touch_wakelock, WAKE_LOCK_SUSPEND, "touch_wakelock");
 	if(err==0x80)
 	    touch_debug(DEBUG_INFO, "[ELAN] Touch is in boot mode!\n");
 
@@ -2300,8 +2298,7 @@ static int elan_ktf3k_ts_remove(struct i2c_client *client)
 		destroy_workqueue(ts->elan_wq);
 	input_unregister_device(ts->input_dev);
 	wake_lock_destroy(&ts->wakelock);
-	wake_lock_destroy(&dt2w_wakelock);
-	wake_lock_destroy(&s2w_wakelock);
+	wake_lock_destroy(&touch_wakelock);
 #ifdef TOUCH_STRESS_TEST
 	misc_deregister(&ts->misc_dev);
 #endif
@@ -2351,11 +2348,10 @@ static int elan_ktf3k_ts_suspend(struct i2c_client *client, pm_message_t mesg)
 /*s2w*/
 	scr_suspended = true;
 	if (s2w_switch == 1 || dt2w_switch == 1) {
-		wake_lock_timeout(&s2w_wakelock, 1500);
 		if (wake_timeout == 0) {
-			wake_lock(&dt2w_wakelock);
+			wake_lock(&touch_wakelock);
 		} else {
-			wake_lock_timeout(&dt2w_wakelock, 100 * wake_timeout);
+			wake_lock_timeout(&touch_wakelock, 100 * wake_timeout);
 		}
 		return 0;
 	}
@@ -2396,11 +2392,9 @@ static int elan_ktf3k_ts_resume(struct i2c_client *client)
 		dt2w_switch = dt2w_switch_temp;
 
 	scr_suspended = false;
-	if (wake_lock_active(&s2w_wakelock))
-		wake_unlock(&s2w_wakelock);
 
-	if (wake_lock_active(&dt2w_wakelock))
-		wake_unlock(&dt2w_wakelock);
+	if (wake_lock_active(&touch_wakelock))
+		wake_unlock(&touch_wakelock);
 /* end s2w */
 
 	return 0;
