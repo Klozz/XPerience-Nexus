@@ -32,7 +32,6 @@
 #include <linux/kernel_stat.h>
 #include <linux/input.h>
 #include <asm/cputime.h>
-#include <linux/hotplug.h>
 
 static atomic_t active_count = ATOMIC_INIT(0);
 
