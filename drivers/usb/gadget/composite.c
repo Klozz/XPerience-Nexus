@@ -599,7 +599,9 @@ static void reset_config(struct usb_composite_dev *cdev)
 		bitmap_zero(f->endpoints, 32);
 	}
 	cdev->config = NULL;
-	cdev->delayed_status = 0;
+
+	wake_lock_timeout(&usb_config_wake_lock, 1*HZ);
+	printk(KERN_INFO "%s : usb reset config wake unlock --\n", __func__);
 }
 
 static int set_config(struct usb_composite_dev *cdev,
