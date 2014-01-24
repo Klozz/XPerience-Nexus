@@ -56,7 +56,6 @@
 #include <mach/thermal.h>
 #include <mach/board-grouper-misc.h>
 #include <mach/tegra_fiq_debugger.h>
-#include <linux/tegra_minmax_cpufreq.h>
 
 #include "board.h"
 #include "clock.h"
@@ -1082,11 +1081,6 @@ void grouper_booting_info(void )
 
 static void __init tegra_grouper_init(void)
 {
-	int cpu;
-	for_each_present_cpu(cpu) {
-		per_cpu(tegra_cpu_min_freq, cpu) = 102000;
-		per_cpu(tegra_cpu_max_freq, cpu) = 1300000;
-	}
 	grouper_misc_init();
 	tegra_thermal_init(&thermal_data);
 	tegra_clk_init_from_table(grouper_clk_init_table);
