@@ -45,34 +45,32 @@ static DEFINE_MUTEX(scroff_freq);
 #ifdef CONFIG_HAS_EARLYSUSPEND
 static void __cpuinit tegra_sleeper_early_suspend(struct early_suspend *h)
 {
+	mutex_lock(&scroff_freq);
 	int cpu;
 	for_each_possible_cpu(cpu) {
 		if (cpu_online(cpu)) {
-			/*Use mutex because this region holds data that gets updated*/			
-			mutex_lock(&scroff_freq);
 			int maxscroff_freq_val = maxscroff_freq;
-			mutex_unlock(&scroff_freq);
-			per_cpu(tegra_cpu_max_freq, cpu) = maxscroff_freq_val;
+			policy->max = maxscroff_freq_val;
 			pr_info("Earlysuspend: set max freq to %d\n", maxscroff_freq);
 		}
-	}		
+	}
+	mutex_unlock(&scroff_freq);		
 	return; 
 
 }
 
 static void __cpuinit tegra_sleeper_late_resume(struct early_suspend *h)
-{
+{	
+	mutex_lock(&scroff_freq);
 	int cpu;
 	for_each_possible_cpu(cpu) {
 		if (cpu_online(cpu)) {
-			/*Use mutex because this region holds data that gets updated*/			
-			mutex_lock(&scroff_freq);
 			int maxscron_freq_val = maxscron_freq;
-			mutex_unlock(&scroff_freq);
-			per_cpu(tegra_cpu_max_freq, cpu) = maxscron_freq_val;	
+			policy->max = maxscron_freq_val;	
 			pr_info("Lateresume: set max freq to %d\n", maxscron_freq);	
 		}
 	}
+	mutex_unlock(&scroff_freq);
 	return; 
 
 }
